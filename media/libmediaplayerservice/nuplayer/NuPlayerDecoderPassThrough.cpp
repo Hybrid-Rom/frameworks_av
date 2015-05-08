@@ -32,6 +32,8 @@
 
 #include "ATSParser.h"
 
+#include "ExtendedUtils.h"
+
 namespace android {
 
 // TODO optimize buffer size for power consumption
@@ -65,8 +67,10 @@ void NuPlayer::DecoderPassThrough::getStats(
     *numFramesDropped = 0;
 }
 
-void NuPlayer::DecoderPassThrough::onConfigure(const sp<AMessage> &format) {
+void NuPlayer::DecoderPassThrough::onConfigure(const sp<AMessage> &format, bool isStreaming) {
     ALOGV("[%s] onConfigure", mComponentName.c_str());
+    sp<AMessage> videoFormat = mSource->getFormat(false /* video */);
+    bool hasVideo = (videoFormat != NULL);
     mCachedBytes = 0;
     mPendingBuffersToDrain = 0;
     mReachedEOS = false;
@@ -77,8 +81,15 @@ void NuPlayer::DecoderPassThrough::onConfigure(const sp<AMessage> &format) {
     // The audio sink is already opened before the PassThrough decoder is created.
     // Opening again might be relevant if decoder is instantiated after shutdown and
     // format is different.
+    if (ExtendedUtils::is24bitPCMOffloadEnabled()) {
+        sp<MetaData> audioMeta = mSource->getFormatMeta(true /* audio */);
+        if (ExtendedUtils::is24bitPCMOffloaded(audioMeta)) {
+            format->setInt32("bits-per-sample", 24);
+        }
+    }
+
     status_t err = mRenderer->openAudioSink(
-            format, true /* offloadOnly */, false /* hasVideo */,
+            format, true /* offloadOnly */, hasVideo /* hasVideo */, isStreaming,
             AUDIO_OUTPUT_FLAG_NONE /* flags */, NULL /* isOffloaded */);
     if (err != OK) {
         handleError(err);

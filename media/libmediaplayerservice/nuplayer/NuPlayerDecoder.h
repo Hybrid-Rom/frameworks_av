@@ -39,7 +39,7 @@ protected:
 
     virtual void onMessageReceived(const sp<AMessage> &msg);
 
-    virtual void onConfigure(const sp<AMessage> &format);
+    virtual void onConfigure(const sp<AMessage> &format, bool isStreaming);
     virtual void onSetRenderer(const sp<Renderer> &renderer);
     virtual void onGetInputBuffers(Vector<sp<ABuffer> > *dstBuffers);
     virtual void onResume(bool notifyComplete);
@@ -60,9 +60,9 @@ private:
     sp<CCDecoder> mCCDecoder;
 
     sp<AMessage> mInputFormat;
-    sp<AMessage> mOutputFormat;
     sp<MediaCodec> mCodec;
     sp<ALooper> mCodecLooper;
+    sp<PlayerExtendedStats> mPlayerExtendedStats;
 
     List<sp<AMessage> > mPendingInputMessages;
 
